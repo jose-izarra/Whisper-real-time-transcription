@@ -10,6 +10,9 @@ from queue import Queue
 from time import sleep
 from sys import platform
 
+os.environ['TERM'] = 'xterm-256color'
+# Set CUDA environment variable if using GPU acceleration
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def main():
     parser = argparse.ArgumentParser()
