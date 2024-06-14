@@ -4,11 +4,12 @@ import numpy as np
 import speech_recognition as sr
 import whisper
 import torch
+import cv2
+import pygame
 
 from datetime import datetime, timedelta
 from queue import Queue
 from time import sleep
-from sys import platform
 
 # Set TERM environment variable
 os.environ['TERM'] = 'xterm-256color'  # or another appropriate value
@@ -71,8 +72,22 @@ def main():
 
     buffer = ""
 
+    # Initialize Pygame
+    pygame.init()
+    font = pygame.font.SysFont('Arial', 24)
+    screen = pygame.display.set_mode((640, 480))
+    pygame.display.set_caption("Live Feed with Captions")
+
+    # OpenCV video capture
+    cap = cv2.VideoCapture(1)
+
     while True:
         try:
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+            if not ret:
+                break
+
             now = datetime.utcnow()
             if not data_queue.empty():
                 phrase_complete = False
@@ -95,15 +110,35 @@ def main():
 
                 buffer = update_buffer(text, buffer, max_words)
 
-                os.system('cls' if os.name == 'nt' else 'clear')
-                print('Start of buffer' + buffer)
-                print('', end='', flush=True)
-
                 # Write the transcription to the output file
                 with open(output_file, 'a') as f:
                     f.write(text + ' ')
-            else:
-                sleep(0.25)
+
+            # Clear the screen
+            screen.fill((0, 0, 0))
+
+            # Convert the frame to a format suitable for Pygame
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = np.rot90(frame)
+            frame = pygame.surfarray.make_surface(frame)
+
+            # Blit the frame onto the screen
+            screen.blit(frame, (0, 0))
+
+            # Render the text
+            text_surface = font.render(buffer, True, (255, 255, 255))
+            screen.blit(text_surface, (10, 450))
+
+            # Update the display
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    cap.release()
+                    pygame.quit()
+                    return
+
+            sleep(0.25)
         except KeyboardInterrupt:
             break
 
@@ -114,7 +149,6 @@ def main():
     # Save the final transcription to the output file
     with open(output_file, 'a') as f:
         f.write('\n'.join(transcription))
-
 
 if __name__ == "__main__":
     main()
