@@ -4,7 +4,6 @@ import whisper
 import torch
 import moviepy.editor as mp
 from moviepy.editor import VideoFileClip
-from datetime import timedelta
 
 # Load Whisper model
 model = whisper.load_model("large")
@@ -43,7 +42,8 @@ def add_captions_to_video(video_path, segments, output_path):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    temp_video_path = 'temp_video.mp4'
+    out = cv2.VideoWriter(temp_video_path, fourcc, fps, (width, height))
 
     current_segment_idx = 0
     num_segments = len(segments)
@@ -68,6 +68,16 @@ def add_captions_to_video(video_path, segments, output_path):
     cap.release()
     out.release()
 
+    # Combine the original audio with the captioned video
+    video_with_captions = mp.VideoFileClip(temp_video_path)
+    original_video = mp.VideoFileClip(video_path)
+    video_with_audio = video_with_captions.set_audio(original_video.audio)
+    video_with_audio.write_videofile(output_path, codec='libx264')
+
+    # Cleanup temporary video file
+    import os
+    os.remove(temp_video_path)
+
 
 def main(video_path, output_path):
     # Extract audio from video
@@ -88,5 +98,5 @@ def main(video_path, output_path):
 
 if __name__ == "__main__":
     video_path = "./speech.mp4"  # Replace with your input video file path
-    output_path = "./output_video_with_captions.mp4"  # Replace with your desired output video file path
+    output_path = "./output_video_with_captions_and_audio.mp4"  # Replace with your desired output video file path
     main(video_path, output_path)
