@@ -36,13 +36,12 @@ def draw_text_on_frame(frame, text, position):
     cv2.putText(frame, text, (text_offset_x, text_offset_y - baseline), font, font_scale, font_color, font_thickness)
 
 
-def add_captions_to_video(video_path, segments, output_path):
+def add_captions_to_video(video_path, segments, temp_video_path):
     cap = cv2.VideoCapture(video_path)
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    temp_video_path = 'temp_video.mp4'
     out = cv2.VideoWriter(temp_video_path, fourcc, fps, (width, height))
 
     current_segment_idx = 0
@@ -68,16 +67,6 @@ def add_captions_to_video(video_path, segments, output_path):
     cap.release()
     out.release()
 
-    # Combine the original audio with the captioned video
-    video_with_captions = mp.VideoFileClip(temp_video_path)
-    original_video = mp.VideoFileClip(video_path)
-    video_with_audio = video_with_captions.set_audio(original_video.audio)
-    video_with_audio.write_videofile(output_path, codec='libx264')
-
-    # Cleanup temporary video file
-    import os
-    os.remove(temp_video_path)
-
 
 def main(video_path, output_path):
     # Extract audio from video
@@ -88,15 +77,24 @@ def main(video_path, output_path):
     # Transcribe audio
     segments = transcribe_audio(audio_path, model)
 
-    # Add captions to video
-    add_captions_to_video(video_path, segments, output_path)
+    # Temporary video path
+    temp_video_path = "temp_video.mp4"
 
-    # Cleanup temporary audio file
+    # Add captions to video
+    add_captions_to_video(video_path, segments, temp_video_path)
+
+    # Combine the original audio with the captioned video
+    video_with_captions = mp.VideoFileClip(temp_video_path)
+    final_video = video_with_captions.set_audio(video.audio)
+    final_video.write_videofile(output_path, codec='libx264', audio_codec='aac')
+
+    # Cleanup temporary files
     import os
+    os.remove(temp_video_path)
     os.remove(audio_path)
 
 
 if __name__ == "__main__":
     video_path = "./speech.mp4"  # Replace with your input video file path
-    output_path = "./output_video_with_captions_and_audio.mp4"  # Replace with your desired output video file path
+    output_path = "./output_video_with_captions111.mp4"  # Replace with your desired output video file path
     main(video_path, output_path)
