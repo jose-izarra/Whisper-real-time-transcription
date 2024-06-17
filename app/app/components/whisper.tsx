@@ -1,15 +1,17 @@
 'use client'
 import { useState, useEffect } from 'react'
 
+const url = process.env.BACKEND_URL || 'bruh'
 
-export default function Whisper() {
+export default function Whisper({ url }: { url: string}) {
 
     // const [text, setText] = useState([])
     const [ transcripts, setTranscripts ] = useState<string[]>([])
 
+
     useEffect(() => {
         const getData = async () => {
-            const res = await fetch('http://127.0.0.1:5000/api/whisper');
+            const res = await fetch(`${url}/api/whisper`);
             const data = await res.json();
 
             console.log('data', data)
@@ -31,8 +33,8 @@ export default function Whisper() {
         {
             transcripts.length > 0 ? (
                 <>
-                    <h1 className="text-2xl font-bold pb-5">Whisper</h1>
-                    <p className='font-sans text-lg '>{transcripts}</p>
+                    <h1 className="text-2xl font-bold mb-12">Whisper</h1>
+                    <p className='font-sans text-lg h-[20rem] overflow-y-scroll mb-12'>{transcripts}</p>
                      
                 </>
             ) : (
